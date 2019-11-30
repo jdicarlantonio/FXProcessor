@@ -2,6 +2,8 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
+static constexpr float PI = 3.14159265;
+
 class MainComponent   
     : public AudioAppComponent
     , public ChangeListener
@@ -17,6 +19,9 @@ public:
 
     void paint (Graphics& g) override;
     void resized() override;
+
+    float overdrive(float sample, float blend, float vol);
+    float distortion(float sample, float drive, float blend, float tone, float vol);
 
 private:
     void changeListenerCallback(ChangeBroadcaster*) override;

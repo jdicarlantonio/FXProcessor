@@ -38,6 +38,7 @@ MainComponent::MainComponent()
     setAudioChannels(2, 2);
     deviceManager.addChangeListener(this);
 
+
     startTimer(50);
 }
 
@@ -50,7 +51,48 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
-    // so far nothing to do here ...
+}
+
+static constexpr float onethird = 1.0f / 3.0f;
+static constexpr float twothird = 2.0f / 3.0f;
+
+float MainComponent::overdrive(float sample, float blend, float vol)
+{
+    float outSample = sample;
+    
+    if(sample >= 0.0f && sample < onethird) 
+    {
+        outSample *= 2.0f; 
+    }
+
+    if(sample >= onethird && sample < twothird)
+    {
+        outSample = 3.0f - powf((2.0f - (3.0f * sample)), 2.0f);
+        outSample /= 3.0f;
+    }
+
+    if(sample >= twothird && sample <= 1.0f)
+    {
+        outSample = 1.0f;
+    }
+
+    outSample = (blend * outSample + (1 - blend) * sample) * vol;
+
+    return outSample;
+}
+
+//static constexpr float PI = 3.14159;
+
+float MainComponent::distortion(float sample, float drive, float blend, float tone, float vol)
+{
+    float outSample;
+    float temp = sample;
+
+    temp *= drive * tone;
+
+    outSample = (((2.0f / PI ) * atan(temp) * blend) + (sample * (1.0f - blend))) * vol;
+
+    return outSample;
 }
 
 void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill)
@@ -73,6 +115,7 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
         }
         else
         {
+            // in case there is more output channels than input
             auto actualInputChannel = channel % maxInputChannels;
 
             if(!activeInputChannels[channel])
@@ -83,10 +126,10 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             {
                 auto* input = bufferToFill.buffer->getReadPointer(actualInputChannel, bufferToFill.startSample);
                 auto* output = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
-
+                
                 for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
                 {
-                    output[sample] = input[sample];
+                    output[sample] = (input[sample]);
                 }
             }
         }

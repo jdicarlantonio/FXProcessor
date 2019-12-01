@@ -38,6 +38,10 @@ MainComponent::MainComponent()
     setAudioChannels(2, 2);
     deviceManager.addChangeListener(this);
 
+    // setup raspberry pi GPIO
+    wiringPiSetup();
+    pinMode(SWITCH1, INPUT);
+    pullUpDnControl(SWITCH1, PUD_UP);
 
     startTimer(50);
 }
@@ -129,7 +133,14 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
                 
                 for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
                 {
-                    output[sample] = (input[sample]);
+                    if(digitalRead(SWITCH1) == HIGH)
+                    { 
+                        output[sample] = overdrive(input[sample], 0.6, 1.5);
+                    }
+                    else
+                    {
+                        output[sample] = input[sample];
+                    }
                 }
             }
         }

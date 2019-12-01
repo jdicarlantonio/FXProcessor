@@ -2,6 +2,18 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
+#if defined(JUCE_LINUX) && defined(__arm__)
+#define RASPBERRY_PI 1
+extern "C" {
+#include <wiringPi.h>
+#include <wiringSerial.h>
+#include <mcp23008.h>
+}
+#endif
+
+// switch gpio mapped to wiringPi
+#define SWITCH1 3
+
 static constexpr float PI = 3.14159265;
 
 class MainComponent   

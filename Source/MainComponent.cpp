@@ -71,7 +71,13 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
-    // nothing to do here so far
+    delayLine.updateParameters(
+        386.0f,
+        50.0f,
+        35.0f,
+        sampleRate
+    );
+    delayLine.prepareBuffer(sampleRate);
 }
 
 static constexpr float onethird = 1.0f / 3.0f;
@@ -112,9 +118,12 @@ float MainComponent::distortion(float sample, float drive, float blend, float to
     temp *= drive * tone;
 
     outSample = (((2.0f / PI ) * atan(temp) * blend) + (sample * (1.0f - blend))) * vol;
-
+    
     return outSample;
 }
+
+// only gonna do mono for now
+#define channel 0
 
 void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill)
 {
@@ -132,6 +141,40 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
         updateFXParam(); 
     }
 
+    if((!activeOutputChannels[0]) || maxInputChannels == 0) 
+    {
+        bufferToFill.buffer->clear(0, bufferToFill.startSample, bufferToFill.numSamples);
+    }
+    else
+    {
+        if(!activeInputChannels[0])
+        {
+            bufferToFill.buffer->clear(0, bufferToFill.startSample, bufferToFill.numSamples);
+        }
+        else
+        {
+            auto* audioData = bufferToFill.buffer->getWritePointer(0, bufferToFill.startSample);
+            
+            if(digitalRead(SWITCH1) || digitalRead(SWITCH2))
+            {
+                for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
+                {
+                    if(digitalRead(SWITCH1) == HIGH)
+                    { 
+                        audioData[sample] = overdrive(audioData[sample], odBlend, odVol);
+                    }
+                    if(digitalRead(SWITCH2) == HIGH)
+                    {
+                        audioData[sample] = distortion(audioData[sample], distDrive, distBlend, distTone, distVol);
+                    }
+                }
+            }
+
+            delayLine.process(audioData, bufferToFill.numSamples);
+        }
+    }
+
+    /*
     // handle processing and what not
     for(auto channel = 0; channel < maxOutputChannels; ++channel)
     {
@@ -150,27 +193,29 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             }
             else
             {
-                auto* input = bufferToFill.buffer->getReadPointer(actualInputChannel, bufferToFill.startSample);
+                auto* input = bufferToFill.buffer->getWritePointer(actualInputChannel, bufferToFill.startSample);
                 auto* output = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
 
-                for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
+                if(digitalRead(SWITCH1) || digitalRead(SWITCH2))
                 {
-                    if(digitalRead(SWITCH1) == HIGH)
-                    { 
-                        output[sample] = overdrive(input[sample], odBlend, odVol);
-                    }
-                    else if(digitalRead(SWITCH2) == HIGH)
+                    for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
                     {
-                        output[sample]  = distortion(input[sample], distDrive, distBlend, distTone, distVol);
+                        if(digitalRead(SWITCH1) == HIGH)
+                        { 
+                            output[sample] = overdrive(input[sample], odBlend, odVol);
+                        }
+                        if(digitalRead(SWITCH2) == HIGH)
+                        {
+                            output[sample] = distortion(input[sample], distDrive, distBlend, distTone, distVol);
+                        }
                     }
-                    else
-                    {
-                        output[sample] = input[sample];
-                    } 
                 }
+                
+                delayLine.process(output, bufferToFill.numSamples);
             }
         }
     }
+    */
 }
 
 void MainComponent::updateFXParam()

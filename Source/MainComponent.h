@@ -11,6 +11,8 @@ extern "C" {
 }
 #endif
 
+#include "DSP/DelayLine.h"
+
 // switch gpio mapped to wiringPi
 #define SWITCH1 3
 #define SWITCH2 4
@@ -47,6 +49,9 @@ private:
 
 private:
     AudioDeviceSelectorComponent audioSetupComp; // for allowing choice of device
+
+    // DSP stuff
+    DelayLine delayLine;
 
     // effect parameters
     // eventually effects will be their own class this is just for a quick prototype

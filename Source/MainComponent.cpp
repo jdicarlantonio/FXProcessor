@@ -116,6 +116,37 @@ float MainComponent::distortion(float sample, float drive, float blend, float to
     return outSample;
 }
 
+float MainComponent::delay(float sample)
+{
+    static int write = 0;
+    static int read = 1;
+
+    float newSample;
+    static float buffer[512] = {0};
+
+    static int downSample = 1;
+
+    newSample = sample + (buffer[read] / 2);
+    buffer[write] = newSample;
+
+    if(downSample == 1)
+    {
+        ++read;
+        if(read >= 512) read = 0;
+         
+        ++write;
+        if(write >= 512) write = 0;
+
+        downSample = 0;
+    }
+    else
+    {
+        downSample = 1;
+    }
+
+    return newSample;
+}
+
 void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill)
 {
     // get current device
@@ -155,6 +186,9 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
                 
                 for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
                 {
+                    output[sample] = delay(input[sample]);
+
+                    /*
                     if(digitalRead(SWITCH1) == HIGH)
                     { 
                         output[sample] = overdrive(input[sample], odBlend, odVol);
@@ -167,6 +201,7 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
                     {
                         output[sample] = input[sample];
                     }
+                    */
                 }
             }
         }
@@ -274,6 +309,7 @@ void MainComponent::updateFXParam()
             break;
         }
     }
+    
 }
 
 void MainComponent::releaseResources()

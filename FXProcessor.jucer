@@ -3,6 +3,8 @@
 <JUCERPROJECT id="Z6E0uK" name="FXProcessor" projectType="guiapp" jucerVersion="5.4.5">
   <MAINGROUP id="U9ubx4" name="FXProcessor">
     <GROUP id="{FFC46771-20F8-9A8D-F347-13CE6E53B8A5}" name="Source">
+      <FILE id="TilM9r" name="DelayLine.cpp" compile="1" resource="0" file="Source/DSP/DelayLine.cpp"/>
+      <FILE id="Hln64a" name="DelayLine.h" compile="0" resource="0" file="Source/DSP/DelayLine.h"/>
       <FILE id="jzW6HE" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="FC6XFo" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>

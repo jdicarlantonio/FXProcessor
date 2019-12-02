@@ -35,7 +35,6 @@ public:
 
     float overdrive(float sample, float blend, float vol);
     float distortion(float sample, float drive, float blend, float tone, float vol);
-    float delay(float sample);
 
 private:
     void updateFXParam();

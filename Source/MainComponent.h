@@ -2,6 +2,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
+// wiringPi stuff
 #if defined(JUCE_LINUX) && defined(__arm__)
 #define RASPBERRY_PI 1
 extern "C" {
@@ -11,13 +12,21 @@ extern "C" {
 }
 #endif
 
+// std library
+#include <array>
+
+// user includes
 #include "DSP/DelayLine.h"
+#include "DSP/BiQuad.h"
 
 // switch gpio mapped to wiringPi
 #define SWITCH1 3
 #define SWITCH2 4
 
-static constexpr float PI = 3.14159265;
+// 4 band EQ
+#define NUM_BANDS 4
+
+//static constexpr float PI = 3.14159265; defined in biquad class
 
 class MainComponent   
     : public AudioAppComponent
@@ -52,9 +61,7 @@ private:
 
     // DSP stuff
     DelayLine delayLine;
-    // incoming: 
-    // BiQuad lpf;
-    // BiQuad hpf;
+    std::array<BiQuad, NUM_BANDS> eqFilter;
 
     // effect parameters
     // eventually effects will be their own class this is just for a quick prototype

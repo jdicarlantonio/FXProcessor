@@ -78,6 +78,11 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
         sampleRate
     );
     delayLine.prepareBuffer(sampleRate);
+
+    for(int i = 0; i < NUM_BANDS; ++i)
+    {
+        eqFilter[i].reset();
+    }
 }
 
 static constexpr float onethird = 1.0f / 3.0f;
@@ -141,6 +146,16 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
         updateFXParam(); 
     }
 
+    for(int i = 0; i < NUM_BANDS; ++i)
+    {
+        eqFilter[i].calculateCoefficients(
+            device->getCurrentSampleRate(),
+            1500.0f,
+            -4.0f,
+            2.0f
+        );
+    }
+
     if((!activeOutputChannels[0]) || maxInputChannels == 0) 
     {
         bufferToFill.buffer->clear(0, bufferToFill.startSample, bufferToFill.numSamples);
@@ -170,11 +185,18 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
                 }
             }
 
-            delayLine.process(audioData, bufferToFill.numSamples);
+//            delayLine.process(audioData, bufferToFill.numSamples);
+
+            for(int i = 0; i < NUM_BANDS; ++i)
+            {
+                eqFilter[i].process(audioData, bufferToFill.numSamples);
+            }
         }
     }
 
-    /*
+    /* 
+     * This is still here for reference
+
     // handle processing and what not
     for(auto channel = 0; channel < maxOutputChannels; ++channel)
     {

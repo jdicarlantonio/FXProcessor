@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "MainComponent.h"
 
 MainComponent::MainComponent()
@@ -11,7 +13,13 @@ MainComponent::MainComponent()
     false,
     false,
     false
-)
+  )
+, odBlend(0.5f)
+, odVol(1.0f)
+, distDrive(0.5f)
+, distBlend(0.5f)
+, distTone(900.0f)
+, distVol(1.0f)
 {
     // set up gui
     addAndMakeVisible(audioSetupComp);
@@ -42,6 +50,14 @@ MainComponent::MainComponent()
     wiringPiSetup();
     pinMode(SWITCH1, INPUT);
     pullUpDnControl(SWITCH1, PUD_UP);
+    pinMode(SWITCH2, INPUT);
+    pullUpDnControl(SWITCH2, PUD_UP);
+   
+    // set up serial communication
+    if((serialPort = serialOpen("/dev/serial0", 9600)) < 0)
+    {
+        DBG("Error opening serial port\n");
+    }
 
     startTimer(50);
 }
@@ -55,6 +71,7 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
+    // nothing to do here so far
 }
 
 static constexpr float onethird = 1.0f / 3.0f;
@@ -110,6 +127,11 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
     auto maxInputChannels = activeInputChannels.countNumberOfSetBits();
     auto maxOutputChannels = activeOutputChannels.countNumberOfSetBits();
 
+    if(serialDataAvail(serialPort))
+    {
+        updateFXParam(); 
+    }
+
     // handle processing and what not
     for(auto channel = 0; channel < maxOutputChannels; ++channel)
     {
@@ -135,7 +157,11 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
                 {
                     if(digitalRead(SWITCH1) == HIGH)
                     { 
-                        output[sample] = overdrive(input[sample], 0.6, 1.5);
+                        output[sample] = overdrive(input[sample], odBlend, odVol);
+                    }
+                    else if(digitalRead(SWITCH2) == HIGH)
+                    {
+                        output[sample]  = distortion(input[sample], distDrive, distBlend, distTone, distVol);
                     }
                     else
                     {
@@ -143,6 +169,109 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
                     }
                 }
             }
+        }
+    }
+}
+
+void MainComponent::updateFXParam()
+{
+    serialData = serialGetchar(serialPort);
+
+    // debugging
+//    printf("%c", serialData);
+//    fflush(stdout);
+
+    // overdrive params
+    switch(serialData)
+    {
+        case 'q':
+        {
+            odVol += 0.25f;
+            printf("odVol: %.4f\n", odVol);
+            fflush(stdout);
+            break;
+        }
+        case 'a':
+        {
+            odVol -= 0.25f;
+            printf("odVol: %.4f\n", odVol);
+            fflush(stdout);
+            break;
+        }
+        case 'w':
+        {
+            odBlend += 0.125;
+            printf("odBlend: %.4f\n", odBlend);
+            fflush(stdout);
+            break;
+        }
+        case 's':
+        {
+            odBlend -= 0.125;
+            printf("odBlend: %.4f\n", odBlend);
+            fflush(stdout);
+            break;
+        }
+    }
+
+    // distortion params
+    switch(serialData)
+    {
+        case 'o':
+        {
+            distVol += 0.25f;
+            printf("distVol: %.4f\n", distVol);
+            fflush(stdout);
+            break;
+        }
+        case 'l':
+        {
+            distVol -= 0.25f;
+            printf("distVol: %.4f\n", distVol);
+            fflush(stdout);
+            break;
+        }
+        case 'i':
+        {
+            distBlend += 0.125;
+            printf("distBlend: %.4f\n", distBlend);
+            fflush(stdout);
+            break;
+        }
+        case 'k':
+        {
+            distBlend -= 0.125;
+            printf("distBlend: %.4f\n", distBlend);
+            fflush(stdout);
+            break;
+        }
+        case 'u':
+        {
+            distTone += 25.0;
+            printf("distTone: %.4f\n", distTone);
+            fflush(stdout);
+            break;
+        }
+        case 'j':
+        {
+            distTone -= 25.0;
+            printf("distTone: %.4f\n", distTone);
+            fflush(stdout);
+            break;
+        }
+        case 'y':
+        {
+            distDrive += 0.125;
+            printf("distDrive: %.4f\n", distDrive);
+            fflush(stdout);
+            break;
+        }
+        case 'h':
+        {
+            distDrive -= 0.125;
+            printf("distDrive: %.4f\n", distDrive);
+            fflush(stdout);
+            break;
         }
     }
 }

@@ -13,6 +13,7 @@ extern "C" {
 
 // switch gpio mapped to wiringPi
 #define SWITCH1 3
+#define SWITCH2 4
 
 static constexpr float PI = 3.14159265;
 
@@ -36,6 +37,8 @@ public:
     float distortion(float sample, float drive, float blend, float tone, float vol);
 
 private:
+    void updateFXParam();
+
     void changeListenerCallback(ChangeBroadcaster*) override;
     static String getListOfActiveBits(const BigInteger& b);
     void timerCallback() override;
@@ -44,6 +47,19 @@ private:
 
 private:
     AudioDeviceSelectorComponent audioSetupComp; // for allowing choice of device
+
+    // effect parameters
+    // eventually effects will be their own class this is just for a quick prototype
+    float odBlend;
+    float odVol;
+    float distDrive;
+    float distBlend;
+    float distTone;
+    float distVol;
+
+    // serial stuff
+    int serialPort;
+    char serialData;
 
     // diagnostic information
     Label cpuUsageLabel;

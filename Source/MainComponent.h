@@ -52,15 +52,26 @@ private:
 
     // DSP stuff
     DelayLine delayLine;
+    // incoming: 
+    // BiQuad lpf;
+    // BiQuad hpf;
 
     // effect parameters
     // eventually effects will be their own class this is just for a quick prototype
+    // actually these parameters may actually need to be here... 
+
+    // distortion/overdrive
     float odBlend;
     float odVol;
     float distDrive;
     float distBlend;
     float distTone;
     float distVol;
+
+    // delay
+    float delayMS;
+    float feedback;
+    float wet;
 
     // serial stuff
     int serialPort;

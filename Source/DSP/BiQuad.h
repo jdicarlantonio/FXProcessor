@@ -19,7 +19,7 @@ public:
 	BiQuad(FilterType ftype); // 0 Peak, 1 Low pass, 2 High Pass, etc... (see enum)
 	~BiQuad();
 
-	void calculateCoefficients(float fs, float f0, float gain, float Q = 2);
+	void calculateCoefficients(float fs, float f0, float gain = 0.0f, float Q = 2.0f);
 	void process(float* buffer, float numSamples);
 	float process(float sampleData);
 

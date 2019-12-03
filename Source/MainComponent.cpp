@@ -20,6 +20,13 @@ MainComponent::MainComponent()
 , distBlend(0.5f)
 , distTone(900.0f)
 , distVol(1.0f)
+, delayMS(0.0f)
+, feedback(0.0f)
+, wet(0.0f)
+, lowVol(0.0f)
+, highVol(0.0f)
+, lowFreq(100.0f)
+, highFreq(1000.0f)
 {
     // set up gui
     addAndMakeVisible(audioSetupComp);
@@ -52,6 +59,10 @@ MainComponent::MainComponent()
     pullUpDnControl(SWITCH1, PUD_UP);
     pinMode(SWITCH2, INPUT);
     pullUpDnControl(SWITCH2, PUD_UP);
+    pinMode(SWITCH3, INPUT);
+    pullUpDnControl(SWITCH3, PUD_UP);
+    pinMode(SWITCH4, INPUT);
+    pullUpDnControl(SWITCH4, PUD_UP);
    
     // set up serial communication
     if((serialPort = serialOpen("/dev/serial0", 9600)) < 0)
@@ -72,17 +83,15 @@ MainComponent::~MainComponent()
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
     delayLine.updateParameters(
-        386.0f,
-        50.0f,
-        35.0f,
+        delayMS,
+        feedback,
+        wet,
         sampleRate
     );
     delayLine.prepareBuffer(sampleRate);
 
-    for(int i = 0; i < NUM_BANDS; ++i)
-    {
-        eqFilter[i].reset();
-    }
+    lowBand.reset();
+    highBand.reset();
 }
 
 static constexpr float onethird = 1.0f / 3.0f;
@@ -144,16 +153,16 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
     if(serialDataAvail(serialPort))
     {
         updateFXParam(); 
-    }
-
-    for(int i = 0; i < NUM_BANDS; ++i)
-    {
-        eqFilter[i].calculateCoefficients(
-            device->getCurrentSampleRate(),
-            1500.0f,
-            -4.0f,
-            2.0f
+        
+        delayLine.updateParameters(
+            delayMS,
+            feedback,
+            wet,
+            device->getCurrentSampleRate()
         );
+
+        lowBand.calculateCoefficients(device->getCurrentSampleRate(), lowFreq, lowVol);
+        highBand.calculateCoefficients(device->getCurrentSampleRate(), highFreq, highVol);
     }
 
     if((!activeOutputChannels[0]) || maxInputChannels == 0) 
@@ -185,11 +194,15 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
                 }
             }
 
-//            delayLine.process(audioData, bufferToFill.numSamples);
-
-            for(int i = 0; i < NUM_BANDS; ++i)
+            if(digitalRead(SWITCH3))
             {
-                eqFilter[i].process(audioData, bufferToFill.numSamples);
+                lowBand.process(audioData, bufferToFill.numSamples);
+                highBand.process(audioData, bufferToFill.numSamples);
+            }
+           
+            if(digitalRead(SWITCH4))
+            {
+                delayLine.process(audioData, bufferToFill.numSamples);
             }
         }
     }
@@ -240,6 +253,9 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
     */
 }
 
+
+// this is not final! 
+// this is just for a quick prototype to test and show a functioning product
 void MainComponent::updateFXParam()
 {
     serialData = serialGetchar(serialPort);
@@ -341,7 +357,157 @@ void MainComponent::updateFXParam()
             break;
         }
     }
-    
+   
+    // delay param
+    switch(serialData)
+    {
+        case 'e':
+        {
+            delayMS += 100.0;
+            printf("delayMS: %.4f\n", delayMS);
+            fflush(stdout);
+
+            break;
+        }
+        case 'd':
+        {
+            delayMS -= 100.0;
+            printf("delayMS: %.4f\n", delayMS);
+            fflush(stdout);
+            break;
+        }
+        case 'r':
+        {
+            feedback += 1.0;
+            printf("feedback: %.4f\n", feedback);
+            fflush(stdout);
+            break;
+        }
+        case 'f':
+        {
+            feedback -= 1.0;
+            printf("feedback: %.4f\n", feedback);
+            fflush(stdout);
+            break;
+        }
+        case 't':
+        {
+            wet += 1.0;
+            printf("wet: %.4f\n", wet);
+            fflush(stdout);
+            break;
+        }
+        case 'g':
+        {
+            wet -= 1.0;
+            printf("wet: %.4f\n", wet);
+            fflush(stdout);
+            break;
+        }
+    }
+
+    // eq param
+    switch(serialData)
+    {
+        case 'x':
+        {
+            lowVol += 0.5;
+            printf("lowVol: %.4f\n", lowVol);
+            fflush(stdout);
+            break;
+        }
+        case 'z':
+        {
+            lowVol -= 0.5;
+            printf("lowVol: %.4f\n", lowVol);
+            fflush(stdout);
+            break;
+        }
+        case 'm':
+        {
+            highVol += 0.5;
+            printf("highVol: %.4f\n", highVol);
+            fflush(stdout);
+            break;
+        }
+        case 'n':
+        {
+            highVol -= 0.5;
+            printf("highVol: %.4f\n", highVol);
+            fflush(stdout);
+            break;
+        }
+        case '1':
+        {
+            lowFreq = 100; 
+            printf("lowFreq: %.4f\n", lowFreq);
+            fflush(stdout);
+            break;
+        }
+        case '2':
+        {
+            lowFreq = 200; 
+            printf("lowFreq: %.4f\n", lowFreq);
+            fflush(stdout);
+            break;
+        }
+        case '3':
+        {
+            lowFreq = 300; 
+            printf("lowFreq: %.4f\n", lowFreq);
+            fflush(stdout);
+            break;
+        }
+        case '4':
+        {
+            lowFreq = 400; 
+            printf("lowFreq: %.4f\n", lowFreq);
+            fflush(stdout);
+            break;
+        }
+        case '7':
+        {
+            highFreq = 700; 
+            printf("highFreq: %.4f\n", highFreq);
+            fflush(stdout);
+            break;
+        }
+        case '8':
+        {
+            highFreq = 800; 
+            printf("highFreq: %.4f\n", highFreq);
+            fflush(stdout);
+            break;
+        }
+        case '9':
+        {
+            highFreq = 900; 
+            printf("highFreq: %.4f\n", highFreq);
+            fflush(stdout);
+            break;
+        }
+        case '0':
+        {
+            highFreq = 1000; 
+            printf("highFreq: %.4f\n", highFreq);
+            fflush(stdout);
+            break;
+        }
+        case '-':
+        {
+            highFreq = 2000; 
+            printf("highFreq: %.4f\n", highFreq);
+            fflush(stdout);
+            break;
+        }
+        case '=':
+        {
+            highFreq = 3000; 
+            printf("highFreq: %.4f\n", highFreq);
+            fflush(stdout);
+            break;
+        }
+    }
 }
 
 void MainComponent::releaseResources()

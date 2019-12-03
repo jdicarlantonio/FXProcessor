@@ -12,21 +12,17 @@ extern "C" {
 }
 #endif
 
-// std library
-#include <array>
-
 // user includes
 #include "DSP/DelayLine.h"
 #include "DSP/BiQuad.h"
 
 // switch gpio mapped to wiringPi
-#define SWITCH1 3
-#define SWITCH2 4
+#define SWITCH1 3 // OD
+#define SWITCH2 4 // Dist
+#define SWITCH3 5 // EQ
+#define SWITCH4 6 // Delay
 
-// 4 band EQ
-#define NUM_BANDS 4
-
-//static constexpr float PI = 3.14159265; defined in biquad class
+//static constexpr float PI = 3.14159265 defined in biquad class
 
 class MainComponent   
     : public AudioAppComponent
@@ -61,7 +57,7 @@ private:
 
     // DSP stuff
     DelayLine delayLine;
-    std::array<BiQuad, NUM_BANDS> eqFilter;
+    BiQuad lowBand, highBand; // low pass and high pass filter for EQ
 
     // effect parameters
     // eventually effects will be their own class this is just for a quick prototype
@@ -79,6 +75,12 @@ private:
     float delayMS;
     float feedback;
     float wet;
+
+    // eq
+    float lowVol;
+    float highVol;
+    float lowFreq;
+    float highFreq;
 
     // serial stuff
     int serialPort;
